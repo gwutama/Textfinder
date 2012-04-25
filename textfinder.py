@@ -9,6 +9,7 @@ Licensed under GPLV3
 """
 
 import os
+import fnmatch
 import sys
 import re
 import glob
@@ -64,23 +65,28 @@ def textfinder(directory, wildcard, regex):
     and pretty print them.
     """
     # iterate every file in this directory
-    path = directory + '/'
-    for filename in glob.glob(path + wildcard):
-        matches = search_string(filename, regex)
-        # print if matches found
-        if matches:
-            # pretty print filename first
-            print Colors.OKBLUE  + '---------------------------------------------------------------------'
-            print Colors.OKGREEN + ' %s' % (filename, )
-            print Colors.OKBLUE  + '---------------------------------------------------------------------'
-            
-            # now print every match
-            for match in matches:
-                print match
+    for file in os.listdir(directory):
+        # call textfinder again if this is a directory, 
+        # otherwise,find matches if it matches the wildcard.
+        file = directory + '/' + file
+        if os.path.isdir(file):
+            subdir = file
+            textfinder(subdir, wildcard, regex)
+        elif fnmatch.fnmatch(file, wildcard):
+            matches = search_string(file, regex)
+            # print only if matches found
+            if matches:
+                # pretty print filename first
+                print Colors.OKBLUE  + '---------------------------------------------------------------------'
+                print Colors.OKGREEN + ' %s' % (file, )
+                print Colors.OKBLUE  + '---------------------------------------------------------------------'
+                
+                # now print every match
+                for match in matches:
+                    print match
 
-            print Colors.OKBLUE  + '---------------------------------------------------------------------'
-            print Colors.ENDC
-
+                print Colors.OKBLUE  + '---------------------------------------------------------------------'
+                print Colors.ENDC
 
 def help():
     """
