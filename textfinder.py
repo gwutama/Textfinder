@@ -13,6 +13,7 @@ import fnmatch
 import sys
 import re
 import glob
+import argparse
 
 
 class Colors:
@@ -54,12 +55,12 @@ def search_string(filename, regex):
         if prog.match(line):
             text = line.rstrip()
             text = re.sub(regex, '\\1' + Colors.WARNING + '\\2' + Colors.ENDC + '\\3', text)
-            match = ' %s%03d  %s%s' % (Colors.HEADER, i, Colors.ENDC, text,)
+            match = '%s%03d  %s%s' % (Colors.OKBLUE, i, Colors.ENDC, text,)
             matches.append(match)
     return matches
 
 
-def textfinder(directory, wildcard, regex):
+def textfinder(directory, wildcard, regex, interactive):
     """
     Finds a string inside files in a directory
     and pretty print them.
@@ -71,67 +72,48 @@ def textfinder(directory, wildcard, regex):
         file = directory + '/' + file
         if os.path.isdir(file):
             subdir = file
-            textfinder(subdir, wildcard, regex)
+            textfinder(subdir, wildcard, regex, interactive)
         elif fnmatch.fnmatch(file, wildcard):
             matches = search_string(file, regex)
-            # print only if matches found
             if matches:
-                # pretty print filename first
-                print Colors.OKBLUE  + '---------------------------------------------------------------------'
-                print Colors.OKGREEN + ' %s' % (file, )
-                print Colors.OKBLUE  + '---------------------------------------------------------------------'
+                print Colors.OKGREEN + '%s' % (file, )
                 
-                # now print every match
                 for match in matches:
                     print match
 
-                print Colors.OKBLUE  + '---------------------------------------------------------------------'
                 print Colors.ENDC
 
-def help():
-    """
-    Displays the help section.
-    """
-    print "---------------------------------------------------------"
-    print "Text Finder"
-    print "---------------------------------------------------------"
-    print "A smart script to iterate all files in a directory,"
-    print "then show every file which has a specific string in it"
-    print "with the line numbers."
-    print
-    print "2012 Galuh Utama <galuh.utama@gwutama.de>"
-    print "Licensed under GPLV3"
-    print
-    print "Usage: ./textfinder DIRECTORY FILE_WILDCARD REGEX"
-    print
+                if interactive:
+                    raw_input()
 
 
 def main():
     """
     The main function to run the whole script.
     """
-    # only consider the second and the third arguments
-    # and if argc equals to 4
-    if len(sys.argv) != 4:
-        help()
-        print 'Error: Wrong number of arguments'
-        sys.exit(2)
+    parser = argparse.ArgumentParser(description="""A smart script to iterate
+                all files recursively in a directory, then show every file
+                which has a specific string in it.""")
 
-    # good number of arguments, now check whether they are valid
-    directory = sys.argv[1]
-    wildcard = sys.argv[2]
-    regex = sys.argv[3]
+    parser.add_argument('directory', nargs=1, help='Base directory')
+    parser.add_argument('wildcard', nargs=1, help='Unix style file name match')
+    parser.add_argument('regex', nargs=1, help='Regular expression')    
+    parser.add_argument('--interactive', '-i', help='Stop on every match', action='store_true')
+
+    args = parser.parse_args()
 
     # valid directory?
-    if os.path.isdir(directory) == False:
+    if os.path.isdir(args.directory[0]) == False:
         print 'Error: Not a directory: %s' % (directory,)
         help()        
         sys.exit(2)
 
     # At this point we will assume that regex and wildcard are always right anyway
     # Run the finder function now.
-    textfinder(directory, wildcard, regex)
-    
+    try:
+        textfinder(args.directory[0], args.wildcard[0], args.regex[0], args.interactive)
+    except KeyboardInterrupt:
+        pass
 
 if __name__ == '__main__':
     main();
